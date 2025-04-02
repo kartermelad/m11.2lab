@@ -7,56 +7,95 @@
     <title>Test AWS Lambda</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    <h1>Simple Demo for PUT, GET, and DELETE</h1>
-    <p id="lambda-info">
-        <!-- loaded with AJAX -->
-    </p>
+    <h1>My Simple Inventory App</h1>
 
-    <hr>
-    <button id="send-data">Send Data</button>
-    <p>Sends an example JSON object to the server with id 11111</p>
-    <script>
-        document.getElementById("send-data").onclick = function () {
-            let xhr = new XMLHttpRequest();
-            xhr.open("PUT", "Your Lambda here");
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.send(JSON.stringify({
-                "id": "6666666",
-                "price": 19,
-                "name": "test put value"
-            }));
-        }
-    </script>
+    <button id="load-items-button" onclick="loadItems()">Load All Items</button>
 
-    <button id="load-data">Load Data</button>
-    <p>Loads data from the server</p>
+    <h2>Items List</h2>
+    <table border="1" id="items-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <h2>Add New Item</h2>
+    <form id="add-item-form">
+        <label for="item-id">ID:</label>
+        <input type="text" id="item-id" required>
+        <label for="item-name">Name:</label>
+        <input type="text" id="item-name" required>
+        <label for="item-price">Price:</label>
+        <input type="number" id="item-price" required>
+        <button type="submit">Add Item</button>
+    </form>
+
     <script>
-        document.getElementById("load-data").onclick = function () {
-            let lambda = document.getElementById("lambda-info");
+        // Function to load items and populate the table
+        function loadItems() {
             let xhr = new XMLHttpRequest();
             xhr.addEventListener("load", function () {
-                lambda.innerHTML = xhr.response;
+                const items = JSON.parse(xhr.response);
+                const tableBody = document.getElementById("items-table").querySelector("tbody");
+                tableBody.innerHTML = "";
+                items.forEach(item => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${item.id}</td>
+                        <td>${item.name}</td>
+                        <td>${item.price}</td>
+                        <td><button onclick="deleteItem('${item.id}')">Delete</button></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
             });
-            xhr.open("GET", "Your Lambda here");
+            xhr.open("GET", "https://f18r15nee0.execute-api.us-west-1.amazonaws.com/items");
             xhr.send();
         }
 
-    </script>
+        // Function to add a new item
+        document.getElementById("add-item-form").onsubmit = function (event) {
+            event.preventDefault();
+            const id = document.getElementById("item-id").value;
+            const name = document.getElementById("item-name").value;
+            const price = document.getElementById("item-price").value;
 
-    <hr>
-    <button id="delete-data">Delete Data</button>
-    <p>Deletes a JSON object from the server with 11111</p>
-    <script>
-        document.getElementById("delete-data").onclick = function () {
             let xhr = new XMLHttpRequest();
-            xhr.open("DELETE", "Your Lambda here");
+            xhr.open("PUT", "https://f18r15nee0.execute-api.us-west-1.amazonaws.com/items");
             xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.addEventListener("load", function () {
+                loadItems();
+
+                document.getElementById("item-id").value = "";
+                document.getElementById("item-name").value = "";
+                document.getElementById("item-price").value = "";
+            });
+            xhr.send(JSON.stringify({ id, name, price }));
+        };
+
+        // Function to delete an item
+        function deleteItem(id) {
+            let xhr = new XMLHttpRequest();
+            xhr.open("DELETE", `https://f18r15nee0.execute-api.us-west-1.amazonaws.com/items/${id}`);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.addEventListener("load", function () {
+                loadItems();
+            });
             xhr.send();
         }
+
+        // Load items when the page loads
+        window.onload = loadItems;
     </script>
 </body>
 
